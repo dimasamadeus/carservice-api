@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>АвтоСервис — Создание заказа</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #222; }
+        header {
+            background: #1a237e; color: #fff;
+            padding: 18px 32px; display: flex; align-items: center; gap: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.3);
+        }
+        header h1 { font-size: 1.4rem; font-weight: 600; }
+        .badge { background: #ffd600; color: #1a237e; padding: 2px 10px;
+                 border-radius: 999px; font-size: .75rem; font-weight: 700; }
+        .container { max-width: 900px; margin: 32px auto; padding: 0 16px; }
+        .card { background: #fff; border-radius: 12px;
+                box-shadow: 0 2px 12px rgba(0,0,0,.08); margin-bottom: 24px; }
+        .card-header {
+            background: #e8eaf6; border-radius: 12px 12px 0 0;
+            padding: 14px 24px; font-weight: 700; font-size: 1rem;
+            display: flex; align-items: center; gap: 8px; color: #1a237e;
+        }
+        .card-header .step {
+            background: #1a237e; color: #fff; border-radius: 50%;
+            width: 26px; height: 26px; display: flex; align-items: center;
+            justify-content: center; font-size: .85rem; flex-shrink: 0;
+        }
+        .card-body { padding: 20px 24px; }
+        label { display: block; font-size: .85rem; color: #555;
+                margin-bottom: 4px; margin-top: 12px; }
+        label:first-child { margin-top: 0; }
+        select, input[type=number] {
+            width: 100%; padding: 9px 12px; border: 1.5px solid #c5cae9;
+            border-radius: 8px; font-size: .95rem; outline: none;
+        }
+        select:focus, input[type=number]:focus { border-color: #3949ab; }
+        .checklist { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+        .check-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; border: 1.5px solid #e8eaf6; border-radius: 8px;
+            cursor: pointer;
+        }
+        .check-item.selected { background: #e8eaf6; border-color: #3949ab; }
+        .check-item input[type=checkbox] { width: 16px; height: 16px; accent-color: #3949ab; }
+        .check-item .item-name { flex: 1; font-size: .9rem; }
+        .check-item .item-price { color: #3949ab; font-weight: 700; font-size: .9rem; }
+        .stock-badge { font-size: .75rem; color: #fff; padding: 2px 8px; border-radius: 999px; margin-left: auto; }
+        .in-stock  { background: #43a047; }
+        .low-stock { background: #fb8c00; }
+        .no-stock  { background: #e53935; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 11px 24px; border: none; border-radius: 8px;
+            font-size: .95rem; font-weight: 600; cursor: pointer;
+        }
+        .btn-primary { background: #1a237e; color: #fff; }
+        .btn-success { background: #2e7d32; color: #fff; }
+        .btn:disabled { opacity: .45; cursor: not-allowed; }
+        .summary { background: #f9fbe7; border: 1.5px solid #c5e1a5; border-radius: 10px; padding: 16px 20px; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: .9rem; }
+        .summary-total {
+            display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700;
+            margin-top: 10px; padding-top: 10px; border-top: 1.5px solid #a5d6a7; color: #2e7d32;
+        }
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; font-size: .9rem; display: none; }
+        .alert-success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; display: block; }
+        .alert-error   { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; display: block; }
+        #result-card { display: none; }
+        .loader { display: none; width: 18px; height: 18px; border: 2.5px solid #fff;
+                  border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<header>
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.5V16h2"/>
+        <circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>
+    </svg>
+    <h1>АвтоСервис</h1>
+    <span class="badge">Лаб 4</span>
+</header>
+
+<div class="container">
+    <div id="alert-global" class="alert"></div>
+
+    <!-- Шаг 1 -->
+    <div class="card">
+        <div class="card-header"><span class="step">1</span> Выберите клиента</div>
+        <div class="card-body">
+            <label>Клиент</label>
+            <select id="sel-client" onchange="onClientChange()">
+                <option value="">— загрузка... —</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Шаг 2 -->
+    <div class="card">
+        <div class="card-header"><span class="step">2</span> Выберите автомобиль</div>
+        <div class="card-body">
+            <label>Автомобиль клиента</label>
+            <select id="sel-car" disabled onchange="onCarChange()">
+                <option value="">— сначала выберите клиента —</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Шаг 3 -->
+    <div class="card">
+        <div class="card-header"><span class="step">3</span> Выберите услуги</div>
+        <div class="card-body">
+            <div id="services-list" class="checklist">
+                <div style="color:#999;font-size:.9rem">Загрузка услуг...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Шаг 4 -->
+    <div class="card">
+        <div class="card-header"><span class="step">4</span> Выберите запчасти</div>
+        <div class="card-body">
+            <div id="parts-list" class="checklist">
+                <div style="color:#999;font-size:.9rem">Загрузка запчастей...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Шаг 5 -->
+    <div class="card">
+        <div class="card-header"><span class="step">5</span> Итог и создание заказа</div>
+        <div class="card-body">
+            <div class="summary">
+                <div class="summary-row"><span style="color:#888">Клиент:</span>     <span id="s-client">—</span></div>
+                <div class="summary-row"><span style="color:#888">Автомобиль:</span>  <span id="s-car">—</span></div>
+                <div class="summary-row"><span style="color:#888">Услуги:</span>      <span id="s-services-cost">0 ₽</span></div>
+                <div class="summary-row"><span style="color:#888">Запчасти:</span>    <span id="s-parts-cost">0 ₽</span></div>
+                <div class="summary-total"><span>Итого:</span> <span id="s-total">0 ₽</span></div>
+            </div>
+            <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
+                <button class="btn btn-success" id="btn-create" onclick="createOrder()">
+                    <span id="btn-loader" class="loader"></span>✓ Создать заказ
+                </button>
+                <button class="btn btn-primary" onclick="resetForm()">↺ Сбросить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Результат -->
+    <div class="card" id="result-card">
+        <div class="card-header"><span class="step">✓</span> Заказ создан</div>
+        <div class="card-body" id="result-body"></div>
+    </div>
+</div>
+
+<script>
+const BASE = '';
+
+let selectedServices = {};
+let selectedParts    = {};
+let allParts         = [];
+let allServices      = [];
+
+async function init() {
+    await Promise.all([loadClients(), loadServices(), loadParts()]);
+    updateSummary();
+}
+
+async function loadClients() {
+    try {
+        const data = await (await fetch(`${BASE}/api/clients`)).json();
+        const sel  = document.getElementById('sel-client');
+        sel.innerHTML = '<option value="">— выберите клиента —</option>' +
+            data.map(c => `<option value="${c.id}">${c.name} (${c.phone})</option>`).join('');
+    } catch(e) { showAlert('Ошибка загрузки клиентов: ' + e.message, 'error'); }
+}
+
+async function onClientChange() {
+    const clientId = document.getElementById('sel-client').value;
+    const selCar   = document.getElementById('sel-car');
+    const selClient = document.getElementById('sel-client');
+    document.getElementById('s-client').textContent =
+        clientId ? selClient.options[selClient.selectedIndex].text : '—';
+    document.getElementById('s-car').textContent = '—';
+
+    if (!clientId) { selCar.disabled = true; selCar.innerHTML = '<option value="">— сначала выберите клиента —</option>'; return; }
+
+    selCar.disabled = true;
+    selCar.innerHTML = '<option>Загрузка...</option>';
+    try {
+        const cars = await (await fetch(`${BASE}/api/clients/${clientId}/cars`)).json();
+        if (!cars.length) {
+            selCar.innerHTML = '<option value="">— у клиента нет автомобилей —</option>';
+        } else {
+            selCar.innerHTML = '<option value="">— выберите автомобиль —</option>' +
+                cars.map(c => `<option value="${c.id}">${c.brand} ${c.model} (${c.licensePlate})</option>`).join('');
+            selCar.disabled = false;
+        }
+    } catch(e) { selCar.innerHTML = '<option>Ошибка загрузки</option>'; }
+    updateSummary();
+}
+
+function onCarChange() {
+    const sel = document.getElementById('sel-car');
+    document.getElementById('s-car').textContent = sel.value ? sel.options[sel.selectedIndex].text : '—';
+    updateSummary();
+}
+
+async function loadServices() {
+    try {
+        allServices = await (await fetch(`${BASE}/api/services`)).json();
+        renderServices();
+    } catch(e) { document.getElementById('services-list').innerHTML = '<div style="color:red">Ошибка загрузки услуг</div>'; }
+}
+
+function renderServices() {
+    document.getElementById('services-list').innerHTML = allServices.map(s => `
+        <div class="check-item" id="svc-row-${s.id}" onclick="toggleService(${s.id}, event)">
+            <input type="checkbox" id="svc-${s.id}" />
+            <span class="item-name">${s.name}</span>
+            <span class="item-price">${s.price.toLocaleString('ru-RU')} ₽</span>
+        </div>`).join('');
+}
+
+function toggleService(id, event) {
+    if (event.target.tagName === 'INPUT') return; // не двойной вызов
+    const cb  = document.getElementById(`svc-${id}`);
+    cb.checked = !cb.checked;
+    const row = document.getElementById(`svc-row-${id}`);
+    const svc = allServices.find(s => s.id === id);
+    if (cb.checked) { selectedServices[id] = { name: svc.name, price: svc.price }; row.classList.add('selected'); }
+    else            { delete selectedServices[id]; row.classList.remove('selected'); }
+    updateSummary();
+}
+
+async function loadParts() {
+    try {
+        allParts = await (await fetch(`${BASE}/api/parts`)).json();
+        renderParts();
+    } catch(e) { document.getElementById('parts-list').innerHTML = '<div style="color:red">Ошибка загрузки запчастей</div>'; }
+}
+
+function renderParts() {
+    document.getElementById('parts-list').innerHTML = allParts.map(p => {
+        const sc = p.quantity > 10 ? 'in-stock' : p.quantity > 0 ? 'low-stock' : 'no-stock';
+        const sl = p.quantity > 10 ? `В наличии: ${p.quantity}` : p.quantity > 0 ? `Мало: ${p.quantity}` : 'Нет';
+        return `
+        <div class="check-item" id="part-row-${p.id}">
+            <input type="checkbox" id="part-${p.id}" ${p.quantity===0?'disabled':''}
+                onchange="togglePart(${p.id})" />
+            <span class="item-name">${p.name} <small style="color:#888">${p.articleNumber}</small></span>
+            <span class="item-price">${p.price.toLocaleString('ru-RU')} ₽</span>
+            <span class="stock-badge ${sc}">${sl}</span>
+        </div>
+        <div id="part-qty-row-${p.id}" style="display:none;padding:4px 12px 8px">
+            <label style="margin:0;font-size:.8rem;color:#555">Количество:</label>
+            <input type="number" style="width:80px" min="1" max="${p.quantity}" value="1"
+                id="part-qty-${p.id}" oninput="onPartQtyChange(${p.id})" />
+        </div>`;
+    }).join('');
+}
+
+function togglePart(id) {
+    const cb   = document.getElementById(`part-${id}`);
+    const row  = document.getElementById(`part-row-${id}`);
+    const qtyR = document.getElementById(`part-qty-row-${id}`);
+    const part = allParts.find(p => p.id === id);
+    if (cb.checked) {
+        selectedParts[id] = { name: part.name, price: part.price, qty: 1 };
+        row.classList.add('selected'); qtyR.style.display = 'block';
+    } else {
+        delete selectedParts[id]; row.classList.remove('selected'); qtyR.style.display = 'none';
+    }
+    updateSummary();
+}
+
+function onPartQtyChange(id) {
+    const qty = parseInt(document.getElementById(`part-qty-${id}`).value) || 1;
+    const part = allParts.find(p => p.id === id);
+    if (selectedParts[id]) { selectedParts[id].qty = Math.min(qty, part.quantity); updateSummary(); }
+}
+
+function updateSummary() {
+    const sc = Object.values(selectedServices).reduce((s, x) => s + x.price, 0);
+    const pc = Object.values(selectedParts).reduce((s, x) => s + x.price * x.qty, 0);
+    document.getElementById('s-services-cost').textContent = sc.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('s-parts-cost').textContent    = pc.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('s-total').textContent         = (sc + pc).toLocaleString('ru-RU') + ' ₽';
+}
+
+async function createOrder() {
+    const clientId = document.getElementById('sel-client').value;
+    const carId    = document.getElementById('sel-car').value;
+    if (!clientId) return showAlert('Выберите клиента', 'error');
+    if (!carId)    return showAlert('Выберите автомобиль', 'error');
+    if (!Object.keys(selectedServices).length && !Object.keys(selectedParts).length)
+        return showAlert('Добавьте хотя бы одну услугу или запчасть', 'error');
+
+    const btn = document.getElementById('btn-create');
+    const loader = document.getElementById('btn-loader');
+    btn.disabled = true; loader.style.display = 'block';
+
+    try {
+        // 1. Создаём заказ (Status=0 = Pending)
+        const orderRes = await fetch(`${BASE}/api/orders`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 0, clientId: +clientId, carId: +carId })
+        });
+        if (!orderRes.ok) throw new Error('Ошибка создания заказа');
+        const order = await orderRes.json();
+        const orderId = order.id;
+
+        // 2. Добавляем услуги
+        for (const svcId of Object.keys(selectedServices)) {
+            await fetch(`${BASE}/api/orders/${orderId}/items/services`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itemId: +svcId, quantity: 1 })
+            });
+        }
+
+        // 3. Добавляем запчасти
+        const partErrors = [];
+        for (const [partId, info] of Object.entries(selectedParts)) {
+            const res = await fetch(`${BASE}/api/orders/${orderId}/items/parts`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itemId: +partId, quantity: info.qty })
+            });
+            if (!res.ok) { const e = await res.json(); partErrors.push(e.error || 'Ошибка'); }
+        }
+
+        // 4. Получаем итог
+        const total = await (await fetch(`${BASE}/api/orders/${orderId}/total`)).json();
+
+        showResult(orderId, total, partErrors);
+        clearAlert();
+    } catch(e) {
+        showAlert('Ошибка: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false; loader.style.display = 'none';
+    }
+}
+
+function showResult(orderId, total, partErrors) {
+    const card = document.getElementById('result-card');
+    card.style.display = 'block';
+    const errHtml = partErrors.length
+        ? `<div class="alert alert-error">⚠️ ${partErrors.join('; ')}</div>` : '';
+    document.getElementById('result-body').innerHTML = `
+        ${errHtml}
+        <div class="alert alert-success">✅ Заказ #${orderId} успешно создан!</div>
+        <div class="summary" style="margin-top:12px">
+            <div class="summary-row"><span style="color:#888">Клиент:</span><span>${total.client}</span></div>
+            <div class="summary-row"><span style="color:#888">Автомобиль:</span><span>${total.car}</span></div>
+            <div class="summary-row"><span style="color:#888">Услуги (${total.services?.length??0}):</span><span>${(total.servicesCost??0).toLocaleString('ru-RU')} ₽</span></div>
+            <div class="summary-row"><span style="color:#888">Запчасти (${total.parts?.length??0}):</span><span>${(total.partsCost??0).toLocaleString('ru-RU')} ₽</span></div>
+            <div class="summary-total"><span>Итого:</span><span>${(total.totalCost??0).toLocaleString('ru-RU')} ₽</span></div>
+        </div>`;
+    card.scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetForm() {
+    document.getElementById('sel-client').value = '';
+    const sc = document.getElementById('sel-car');
+    sc.innerHTML = '<option value="">— сначала выберите клиента —</option>'; sc.disabled = true;
+    selectedServices = {}; selectedParts = {};
+    renderServices(); renderParts(); updateSummary();
+    document.getElementById('s-client').textContent = '—';
+    document.getElementById('s-car').textContent    = '—';
+    document.getElementById('result-card').style.display = 'none';
+    clearAlert(); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showAlert(msg, type) { const el = document.getElementById('alert-global'); el.className = `alert alert-${type}`; el.textContent = msg; }
+function clearAlert() { const el = document.getElementById('alert-global'); el.className = 'alert'; el.textContent = ''; }
+
+init();
+</script>
+</body>
+</html>
