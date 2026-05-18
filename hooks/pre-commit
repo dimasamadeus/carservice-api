@@ -1,0 +1,12 @@
+#!/bin/sh
+echo "⏳ Запуск тестов перед коммитом..."
+
+dotnet test avtoservis.Tests/avtoservis.Tests.csproj -q 2>&1
+
+if [ $? -ne 0 ]; then
+  echo "❌ Тесты не прошли. Коммит отменён."
+  exit 1
+fi
+
+echo "✅ Все тесты прошли. Коммит разрешён."
+exit 0
